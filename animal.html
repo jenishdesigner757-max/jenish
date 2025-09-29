@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Animal Info</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80') 
+                  no-repeat center center fixed;
+      background-size: cover;
+      color: #222;
+      position: relative;
+    }
+
+    /* ✅ Dark overlay for readability */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: -1;
+    }
+
+    /* ✅ Navbar styles */
+    .navbar {
+      background-color: rgba(44, 62, 80, 0.9);
+      color: white;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0px 2px 5px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .container {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      max-width: 900px;
+      margin: 30px auto;
+      box-shadow: 0px 3px 10px rgba(0,0,0,0.3);
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    input, button {
+      padding: 8px;
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .animal-card {
+      background: white;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 8px;
+      box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .animal-card h3 {
+      margin-top: 0;
+      color: #444;
+    }
+
+    .animal-card img {
+      max-width: 250px;
+      border-radius: 8px;
+      display: block;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ Navigation bar -->
+  <div class="navbar">
+    Animal Encyclopedia
+  </div>
+
+  <div class="container">
+    <h2>Search for an Animal</h2>
+    <input type="text" id="animalName" placeholder="Enter animal name (e.g., lion)">
+    <button onclick="getAnimal()">Search</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function getAnimal() {
+      const name = document.getElementById("animalName").value;
+      const url = `https://api.api-ninjas.com/v1/animals?name=${name}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'X-Api-Key': '6LZZ21/955HBC47C1M4IbA==sBndLgG1tFuQmWjs'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
+
+        if (data.length === 0) {
+          resultDiv.innerHTML = "<p>No animal found.</p>";
+          return;
+        }
+
+        // Fetch image from Wikipedia
+        for (const animal of data) {
+          let imageUrl = await getWikiImage(animal.name);
+
+          const card = document.createElement("div");
+          card.className = "animal-card";
+          card.innerHTML = `
+            <h3>${animal.name}</h3>
+            ${imageUrl ? `<img src="${imageUrl}" alt="${animal.name}">` : ""}
+            <p><strong>Taxonomy:</strong> ${animal.taxonomy.class} (${animal.taxonomy.family})</p>
+            <p><strong>Locations:</strong> ${animal.locations ? animal.locations.join(", ") : "N/A"}</p>
+            <p><strong>Characteristics:</strong></p>
+            <ul>
+              ${Object.entries(animal.characteristics).map(([key, value]) => 
+                `<li><b>${key}:</b> ${value}</li>`).join("")}
+            </ul>
+          `;
+          resultDiv.appendChild(card);
+        }
+
+      } catch (error) {
+        document.getElementById("result").innerHTML = `<p style="color:red">${error}</p>`;
+      }
+    }
+
+    // Wikipedia image fetcher
+    async function getWikiImage(query) {
+      try {
+        const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${query}&prop=pageimages&format=json&pithumbsize=400&origin=*`);
+        const data = await res.json();
+        const pages = data.query.pages;
+        const page = Object.values(pages)[0];
+        return page.thumbnail ? page.thumbnail.source : null;
+      } catch {
+        return null;
+      }
+    }
+  </script>
+</body>
+</html>
